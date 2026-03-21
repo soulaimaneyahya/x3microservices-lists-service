@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  x3microservices-lists-service-mysql:
+    build:
+      context: ./database/mysql
+      dockerfile: Dockerfile
+    image: x3microservices_lists_service_mysql_image:v1
+    container_name: x3microservices_lists_service_mysql_container
+    env_file:
+      - ./database/mysql/.env
+    ports:
+      - "3308:3306"  # Host port 3308 maps to container port 3306
+    volumes:
+      - x3microservices-lists-service-mysql-volume:/var/lib/mysql
+    networks:
+      x3microservices_shared_network:
+        ipv4_address: 192.168.1.120  # x3microservices_lists_service_mysql_image IP
+
+  x3microservices-lists-service-php:
+    build:
+      context: ./web/php
+      dockerfile: Dockerfile
+    image: x3microservices_lists_service_php_image:v1
+    container_name: x3microservices_lists_service_php_container
+    working_dir: /var/www/html/x3microservices-lists-service
+    env_file:
+      - ./web/php/.env
+    restart: always
+    ports:
+      - "9002:9000"  # Host port 9002 maps to container port 9000
+    volumes:
+      - ./web/php:/var/www/html/x3microservices-lists-service
+      - ./web/php/vendor:/var/www/html/x3microservices-lists-service/vendor
+    depends_on:
+      - x3microservices-lists-service-mysql
+    networks:
+      x3microservices_shared_network:
+        ipv4_address: 192.168.1.121  # PHP IP
+
+  x3microservices-lists-service-nginx:
+    build:
+      context: ./web/nginx
+      dockerfile: Dockerfile
+    image: x3microservices_lists_service_nginx_image:v1
+    container_name: x3microservices_lists_service_nginx_container
+    working_dir: /etc/nginx
+    env_file:
+      - ./web/nginx/.env
+    restart: always
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./web/nginx:/etc/nginx
+    depends_on:
+      - x3microservices-lists-service-php
+    networks:
+      x3microservices_shared_network:
+        ipv4_address: 192.168.1.122  # Nginx IP
+
+volumes:
+  x3microservices-lists-service-mysql-volume:
+
+networks:
+  x3microservices_shared_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "192.168.1.0/29"
+          gateway: "192.168.1.1"
+    external: true
