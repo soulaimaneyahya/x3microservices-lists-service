@@ -13,4 +13,10 @@ COPY ./init.sql /docker-entrypoint-initdb.d/
 
 EXPOSE ${MYSQL_PORT}
 
-CMD ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+CMD [
+    "mysqld",
+    "--character-set-server=utf8mb4",
+    "--collation-server=utf8mb4_unicode_ci",
+    "--skip-host-cache",
+    "--skip-name-resolve"
+]
